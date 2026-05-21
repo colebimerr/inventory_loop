@@ -1,0 +1,6 @@
+branch_id,branch_name,branch_type,city,state
+DC-01,Dallas Distribution Center,DC,Dallas,TX
+BR-101,Atlanta Branch,branch,Atlanta,GA
+BR-102,Charlotte Branch,branch,Charlotte,NC
+BR-103,Nashville Branch,branch,Nashville,TN
+BR-104,Birmingham Branch,branch,Birmingham,AL
