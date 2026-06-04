@@ -13,7 +13,7 @@ import streamlit as st
 from utils.csv_validators import (
     cross_validate, validate_branches, validate_inventory, validate_variance,
 )
-from views import count_list, roi, variance_queue
+from views import chase_list, count_list, roi, variance_queue
 
 DATA_DIR = Path(__file__).parent / "data"
 
@@ -202,13 +202,16 @@ def render_loaded_shell() -> None:
     var = st.session_state["variance_df"]
     br  = st.session_state["branches_df"]
 
-    tab_queue, tab_count, tab_roi = st.tabs([
+    tab_queue, tab_chase, tab_count, tab_roi = st.tabs([
         "📋 Variance Queue",
+        "⚖️ Chase or Write-Off",
         "🎯 Prioritized Count List",
         "💵 ROI Calculator",
     ])
     with tab_queue:
         variance_queue.render(inv, var, br)
+    with tab_chase:
+        chase_list.render(inv, var, br)
     with tab_count:
         count_list.render(inv, var, br)
     with tab_roi:
