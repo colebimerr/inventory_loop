@@ -5,6 +5,7 @@ Run locally:    streamlit run app.py
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import pandas as pd
@@ -81,6 +82,12 @@ def _load_demo_data() -> bool:
         for e in fk_errs:
             st.write(f"• {e}")
         return False
+    # Demo CSVs are committed to the repo, so their dates freeze at generation
+    # time and the rolling-window charts (e.g. "last 30 days") slowly go empty.
+    # Slide the whole dataset forward so the newest event lands on "now" — every
+    # relative duration is preserved; only the anchor moves. (Demo data only —
+    # real uploads carry their own current dates.)
+    _anchor_dates_to_now(inv_res.df, var_res.df)
     days = _days_span(var_res.df)
     label = (
         f"Demo data — {inv_res.rows:,} SKUs / {br_res.rows} locations / "
@@ -94,6 +101,63 @@ def _days_span(var_df: pd.DataFrame) -> int:
     if not len(var_df):
         return 0
     return int((var_df["detection_date"].max() - var_df["detection_date"].min()).days)
+
+
+def _shift_stage_history(hist, delta: pd.Timedelta):
+    """Add ``delta`` to every timestamp inside one event's stage history.
+
+    Accepts a JSON string (the form the app actually carries) or a parsed list,
+    and returns a JSON string with shifted ISO timestamps — matching what the
+    downstream stage-timing parser expects. Returns input unchanged if unparseable.
+    """
+    records = hist
+    if isinstance(records, str):
+        try:
+            records = json.loads(records)
+        except (ValueError, TypeError):
+            return hist
+    if not isinstance(records, list):
+        return hist
+    out = []
+    for stage in records:
+        stage = dict(stage)
+        for key in ("started_at", "completed_at"):
+            val = stage.get(key)
+            if val:
+                ts = pd.to_datetime(val, errors="coerce")
+                if pd.notna(ts):
+                    stage[key] = (ts + delta).isoformat()
+        out.append(stage)
+    return json.dumps(out)
+
+
+def _anchor_dates_to_now(inv: pd.DataFrame, var: pd.DataFrame) -> None:
+    """Slide all demo timestamps so the most recent event lands on ``now``.
+
+    Keeps every relative gap intact (loop times, stage durations, days-since-count
+    are unchanged) while preventing the baked-in demo data from aging out of the
+    rolling-window charts. Mutates both frames in place. No-op on empty data.
+    """
+    if not len(var) or "detection_date" not in var.columns:
+        return
+    det = pd.to_datetime(var["detection_date"], format="ISO8601", errors="coerce")
+    if not det.notna().any():
+        return
+    delta = pd.Timestamp.now() - det.max()
+    var["detection_date"] = det + delta
+    if "resolution_date" in var.columns:
+        var["resolution_date"] = (
+            pd.to_datetime(var["resolution_date"], format="ISO8601", errors="coerce")
+            + delta
+        )
+    if "stage_history" in var.columns:
+        var["stage_history"] = var["stage_history"].apply(
+            lambda h: _shift_stage_history(h, delta)
+        )
+    if "last_cycle_count_date" in inv.columns:
+        inv["last_cycle_count_date"] = (
+            pd.to_datetime(inv["last_cycle_count_date"], errors="coerce") + delta
+        )
 
 
 def render_landing() -> None:
@@ -202,16 +266,16 @@ def render_loaded_shell() -> None:
     var = st.session_state["variance_df"]
     br  = st.session_state["branches_df"]
 
-    tab_queue, tab_chase, tab_count, tab_roi = st.tabs([
-        "📋 Variance Queue",
+    tab_chase, tab_queue, tab_count, tab_roi = st.tabs([
         "⚖️ Chase or Write-Off",
+        "📋 Variance Queue",
         "🎯 Prioritized Count List",
         "💵 ROI Calculator",
     ])
-    with tab_queue:
-        variance_queue.render(inv, var, br)
     with tab_chase:
         chase_list.render(inv, var, br)
+    with tab_queue:
+        variance_queue.render(inv, var, br)
     with tab_count:
         count_list.render(inv, var, br)
     with tab_roi:
