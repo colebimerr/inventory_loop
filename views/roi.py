@@ -52,10 +52,6 @@ def render(inv_df: pd.DataFrame, var_df: pd.DataFrame, br_df: pd.DataFrame) -> N
             "Fully-loaded labor cost ($/hr)",
             min_value=0.0, value=float(defaults["labor_rate"]), step=5.0,
         )
-        lost_sale_value = st.number_input(
-            "Avg lost sale per stockout ($)",
-            min_value=0.0, value=float(defaults["lost_sale_value"]), step=25.0,
-        )
         shrink_rate = st.number_input(
             "Industry shrink rate (%)",
             min_value=0.0, max_value=10.0,
@@ -83,7 +79,6 @@ def render(inv_df: pd.DataFrame, var_df: pd.DataFrame, br_df: pd.DataFrame) -> N
         events_per_month=events_per_month,
         current_loop_days=current_loop_days,
         labor_rate=labor_rate,
-        lost_sale_value=lost_sale_value,
         shrink_rate_pct=shrink_rate,
         target_loop_hours=target_loop_hours,
         shrink_reduction_pct=float(shrink_reduction),
@@ -96,7 +91,7 @@ def render(inv_df: pd.DataFrame, var_df: pd.DataFrame, br_df: pd.DataFrame) -> N
         st.markdown("#### Current state vs. with InventoryLoop")
         col_a, col_b = st.columns(2, gap="medium")
 
-        def _state_card(col, title, shrink, labor, lost, total, color):
+        def _state_card(col, title, shrink, labor, total, color):
             with col:
                 st.markdown(
                     f"<div style='padding:1rem;border:1px solid {color};"
@@ -108,18 +103,17 @@ def render(inv_df: pd.DataFrame, var_df: pd.DataFrame, br_df: pd.DataFrame) -> N
                     f"font-weight:400'> / yr</span></div>"
                     f"<div style='font-size:0.85rem;color:#475569;line-height:1.6'>"
                     f"Shrink: <b>{_money(shrink)}</b><br>"
-                    f"Loop labor: <b>{_money(labor)}</b><br>"
-                    f"Lost sales: <b>{_money(lost)}</b>"
+                    f"Loop labor: <b>{_money(labor)}</b>"
                     f"</div></div>",
                     unsafe_allow_html=True,
                 )
 
         _state_card(col_a, "Current state",
                     result.current_shrink, result.current_labor,
-                    result.current_lost_sales, result.current_total, "#94A3B8")
+                    result.current_total, "#94A3B8")
         _state_card(col_b, "With InventoryLoop",
                     result.future_shrink, result.future_labor,
-                    result.future_lost_sales, result.future_total, "#10B981")
+                    result.future_total, "#10B981")
 
         st.markdown("")
         savings_col, payback_col = st.columns(2, gap="medium")
@@ -149,8 +143,10 @@ def render(inv_df: pd.DataFrame, var_df: pd.DataFrame, br_df: pd.DataFrame) -> N
 
         st.markdown("")
         st.caption(
-            "Estimates based on industry averages and your loaded data. "
-            "Real savings depend on operational adoption. Lost-sales line assumes "
-            "15% of variance events produce a lost sale; loop labor assumes "
-            "2 active hours of work per day a loop is open."
+            "Built only on numbers you can defend: variance-loop labor saved and "
+            "shrink reduction. We deliberately leave out a lost-sales dollar figure — "
+            "a stockout isn't a reliable lost sale (backorders, substitutions, partial "
+            "fills, cross-branch pulls), and that data isn't capturable. Loop labor "
+            "assumes 2 active hours of work per day a loop stays open; real savings "
+            "depend on operational adoption."
         )

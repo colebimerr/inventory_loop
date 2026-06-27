@@ -101,7 +101,9 @@ def render(inv_df: pd.DataFrame, var_df: pd.DataFrame, br_df: pd.DataFrame) -> N
     with st.expander("How is the risk score calculated?"):
         st.markdown(
             "Weighted sum of normalized factors, each on [0,1], scaled to 100:\n"
-            "- 35% days since last cycle count\n"
+            "- 35% cadence-overdue: days since count ÷ the item's expected count "
+            "cadence by class (A ~4×/yr, B ~3×, C ~2×, D ~1×) — an A item past its "
+            "tighter cadence outranks a C item with more raw days\n"
             "- 30% recent variance count (last 30 days, capped at 5)\n"
             "- 15% velocity class (A=1.0, B=0.6, C=0.3)\n"
             "- 10% recent variance at a problem branch (problem = >1.5× median branch count)\n"

@@ -12,7 +12,12 @@ import numpy as np
 import pandas as pd
 
 ACTIVE_HOURS_PER_DAY = 2.0      # time a person actually spends on a loop per calendar day
-STOCKOUT_RATE = 0.15            # share of variance events that produce a lost sale
+
+# NOTE: a lost-sales dollar line was deliberately removed from the ROI. A stockout
+# is not a reliable lost sale (backorders, substitutions, partial fills, cross-branch
+# pulls), and the data to confirm one basically doesn't exist in the ERP — validated
+# directly by a sophisticated operator. ROI is built only on numbers a customer can
+# actually defend: variance-loop labor saved and shrink reduction.
 
 
 @dataclass
@@ -22,7 +27,6 @@ class ROIInputs:
     events_per_month: float
     current_loop_days: float
     labor_rate: float                # $/hr fully loaded
-    lost_sale_value: float           # $/stockout
     shrink_rate_pct: float           # % e.g. 1.5
     target_loop_hours: float         # hours
     shrink_reduction_pct: float      # % e.g. 30
@@ -33,12 +37,10 @@ class ROIInputs:
 class ROIResult:
     current_shrink: float
     current_labor: float
-    current_lost_sales: float
     current_total: float
 
     future_shrink: float
     future_labor: float
-    future_lost_sales: float
     future_total: float
 
     annual_savings: float
@@ -82,7 +84,6 @@ def defaults_from_data(inv_df: pd.DataFrame, var_df: pd.DataFrame,
         "events_per_month": round(events_per_month, 1),
         "current_loop_days": round(loop_days, 2),
         "labor_rate": 45.0,
-        "lost_sale_value": 250.0,
         "shrink_rate_pct": 1.5,
         "target_loop_hours": 4.0,
         "shrink_reduction_pct": 30.0,
@@ -96,23 +97,20 @@ def compute(inputs: ROIInputs) -> ROIResult:
     current_shrink = inputs.inventory_value * (inputs.shrink_rate_pct / 100.0)
     current_labor  = (events_per_year * inputs.current_loop_days
                       * ACTIVE_HOURS_PER_DAY * inputs.labor_rate)
-    current_lost   = events_per_year * STOCKOUT_RATE * inputs.lost_sale_value
-    current_total  = current_shrink + current_labor + current_lost
+    current_total  = current_shrink + current_labor
 
     target_loop_days = inputs.target_loop_hours / 24.0
     future_shrink_rate = inputs.shrink_rate_pct * (1 - inputs.shrink_reduction_pct / 100.0)
     future_shrink = inputs.inventory_value * (future_shrink_rate / 100.0)
     future_labor  = (events_per_year * target_loop_days
                      * ACTIVE_HOURS_PER_DAY * inputs.labor_rate)
-    future_lost   = (events_per_year * STOCKOUT_RATE * inputs.lost_sale_value
-                     * (target_loop_days / max(inputs.current_loop_days, 0.001)))
-    future_total = future_shrink + future_labor + future_lost
+    future_total = future_shrink + future_labor
 
     savings = max(0.0, current_total - future_total)
     payback_months = (inputs.annual_price / savings * 12.0
                       if savings > 0 else float("inf"))
     return ROIResult(
-        current_shrink, current_labor, current_lost, current_total,
-        future_shrink, future_labor, future_lost, future_total,
+        current_shrink, current_labor, current_total,
+        future_shrink, future_labor, future_total,
         savings, payback_months,
     )

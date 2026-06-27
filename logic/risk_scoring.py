@@ -6,11 +6,11 @@ import numpy as np
 import pandas as pd
 
 # Weights are tuned so the leaderboard surfaces a believable mix of:
-#   - high-velocity SKUs that haven't been counted in a while
+#   - class-A SKUs that are overdue against their (tighter) count cadence
 #   - SKUs with recent variance churn
 #   - high-dollar SKUs even if otherwise quiet
 WEIGHTS = {
-    "days_since_count": 0.35,
+    "cadence_overdue":  0.35,
     "recent_variance":  0.30,
     "velocity":         0.15,
     "problem_branch":   0.10,
@@ -18,6 +18,14 @@ WEIGHTS = {
 }
 
 VELOCITY_SCORE = {"A": 1.0, "B": 0.6, "C": 0.3}
+
+# Expected cycle-count cadence by class, in days between counts. A items are
+# meant to be counted ~4×/yr, B ~3×, C ~2×, D ~1×. We score how overdue a SKU is
+# *against its own cadence*, not by raw days — so an A item at 80 days (already
+# past its ~90-day cadence) outranks a C item at 100 days (well inside its ~180).
+# This is the item-class signal a seasoned ops lead uses; flat days-since-count
+# misses it. Cadence per HARDI/distribution cycle-count norms.
+COUNT_CADENCE_DAYS = {"A": 91, "B": 122, "C": 182, "D": 365}
 
 
 def _normalize(s: pd.Series) -> pd.Series:
@@ -43,6 +51,12 @@ def score_skus(inv_df: pd.DataFrame, var_df: pd.DataFrame,
                                                    format="ISO8601")
     inv["days_since_count"] = (now - inv["last_cycle_count_date"]).dt.days.clip(lower=0)
 
+    # Overdue *relative to the item's class cadence* — the item-class signal.
+    inv["expected_cadence_days"] = (
+        inv["velocity_class"].map(COUNT_CADENCE_DAYS).fillna(COUNT_CADENCE_DAYS["C"])
+    )
+    inv["cadence_overdue_ratio"] = inv["days_since_count"] / inv["expected_cadence_days"]
+
     # Recent variance per SKU
     cutoff = now - pd.Timedelta(days=30)
     var_dates = pd.to_datetime(var_df["detection_date"], format="ISO8601")
@@ -67,14 +81,14 @@ def score_skus(inv_df: pd.DataFrame, var_df: pd.DataFrame,
     inv["velocity_score"] = inv["velocity_class"].map(VELOCITY_SCORE).fillna(0.3)
 
     # Normalize each factor to [0, 1] then take a weighted sum.
-    f_days   = _normalize(inv["days_since_count"])
+    f_cadence = _normalize(inv["cadence_overdue_ratio"])
     f_var    = _normalize(inv["recent_variance_count"].clip(upper=5))
     f_vel    = inv["velocity_score"]
     f_pb     = inv["at_problem_branch"]
     f_dollar = _normalize(inv["unit_cost"])
 
     inv["risk_score"] = (
-        WEIGHTS["days_since_count"] * f_days
+        WEIGHTS["cadence_overdue"] * f_cadence
         + WEIGHTS["recent_variance"] * f_var
         + WEIGHTS["velocity"]        * f_vel
         + WEIGHTS["problem_branch"]  * f_pb
