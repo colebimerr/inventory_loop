@@ -108,9 +108,15 @@ def loop_time_trend(enriched: pd.DataFrame, weeks: int = 26) -> pd.DataFrame:
     if not len(recent):
         return pd.DataFrame({"resolution_week": [], "avg_loop_days": []})
     recent["resolution_week"] = recent["resolution_date"].dt.to_period("W").dt.start_time
-    trend = (recent.groupby("resolution_week")["loop_days"].mean()
-             .reset_index().rename(columns={"loop_days": "avg_loop_days"}))
-    return trend.sort_values("resolution_week")
+    agg = (recent.groupby("resolution_week")["loop_days"]
+           .agg(["mean", "size"]).reset_index()
+           .rename(columns={"mean": "avg_loop_days", "size": "n"}))
+    # Drop the current, still-incomplete week — a partial sample skews the last
+    # point into a misleading spike. Also drop any week with too few resolved
+    # events to be a meaningful average.
+    current_week = now.to_period("W").start_time
+    agg = agg[(agg["resolution_week"] < current_week) & (agg["n"] >= 3)]
+    return agg[["resolution_week", "avg_loop_days"]].sort_values("resolution_week")
 
 
 # ---------------------------------------------------------------------------

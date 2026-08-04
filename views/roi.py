@@ -146,7 +146,8 @@ def render(inv_df: pd.DataFrame, var_df: pd.DataFrame, br_df: pd.DataFrame) -> N
             "Built only on numbers you can defend: variance-loop labor saved and "
             "shrink reduction. We deliberately leave out a lost-sales dollar figure — "
             "a stockout isn't a reliable lost sale (backorders, substitutions, partial "
-            "fills, cross-branch pulls), and that data isn't capturable. Loop labor "
-            "assumes 2 active hours of work per day a loop stays open; real savings "
-            "depend on operational adoption."
+            "fills, cross-branch pulls), and that data isn't capturable. Labor is "
+            "charged as ~30 min of active handling per variance (not per day it sits "
+            "open), and the tool's labor benefit is capped at 35%. Every input above "
+            "is editable — dial them to your operation. Real savings depend on adoption."
         )
