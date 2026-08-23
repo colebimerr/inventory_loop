@@ -42,11 +42,6 @@ def render(inv_df: pd.DataFrame, var_df: pd.DataFrame, br_df: pd.DataFrame) -> N
             "Avg variance events per month",
             min_value=0.0, value=float(defaults["events_per_month"]), step=10.0,
         )
-        current_loop_days = st.number_input(
-            "Current avg loop time (days, detection → resolution)",
-            min_value=0.1, value=float(defaults["current_loop_days"]), step=0.1,
-        )
-
         st.markdown("#### Cost assumptions")
         labor_rate = st.number_input(
             "Fully-loaded labor cost ($/hr)",
@@ -59,17 +54,18 @@ def render(inv_df: pd.DataFrame, var_df: pd.DataFrame, br_df: pd.DataFrame) -> N
         )
 
         st.markdown("#### With InventoryLoop")
-        target_loop_hours = st.number_input(
-            "Target loop time (hours)",
-            min_value=0.5, value=float(defaults["target_loop_hours"]), step=0.5,
-        )
         shrink_reduction = st.slider(
             "Assumed shrink reduction with tool (%)",
-            min_value=0, max_value=70,
+            min_value=0, max_value=40,
             value=int(defaults["shrink_reduction_pct"]),
         )
+        labor_reduction = st.slider(
+            "Labor reduced by prioritization (%)",
+            min_value=0, max_value=40,
+            value=int(defaults["labor_reduction_pct"]),
+        )
         annual_price = st.number_input(
-            "Tool price ($/yr)",
+            "Service price ($/yr)",
             min_value=0.0, value=float(defaults["annual_price"]), step=5_000.0,
         )
 
@@ -77,11 +73,10 @@ def render(inv_df: pd.DataFrame, var_df: pd.DataFrame, br_df: pd.DataFrame) -> N
         inventory_value=inv_value,
         branches=int(branches),
         events_per_month=events_per_month,
-        current_loop_days=current_loop_days,
         labor_rate=labor_rate,
         shrink_rate_pct=shrink_rate,
-        target_loop_hours=target_loop_hours,
         shrink_reduction_pct=float(shrink_reduction),
+        labor_reduction_pct=float(labor_reduction),
         annual_price=annual_price,
     )
     result = compute(inputs)
@@ -147,7 +142,7 @@ def render(inv_df: pd.DataFrame, var_df: pd.DataFrame, br_df: pd.DataFrame) -> N
             "shrink reduction. We deliberately leave out a lost-sales dollar figure — "
             "a stockout isn't a reliable lost sale (backorders, substitutions, partial "
             "fills, cross-branch pulls), and that data isn't capturable. Labor is "
-            "charged as ~30 min of active handling per variance (not per day it sits "
-            "open), and the tool's labor benefit is capped at 35%. Every input above "
-            "is editable — dial them to your operation. Real savings depend on adoption."
+            "charged as ~30 min of active handling per variance; the tool's benefit is "
+            "the prioritization saving you set above (fewer, smarter chases/counts). "
+            "Every input is editable — dial them to your operation. Real savings depend on adoption."
         )
