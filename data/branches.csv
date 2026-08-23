@@ -1,6 +1,16 @@
 branch_id,branch_name,branch_type,city,state
-DC-01,Dallas Distribution Center,DC,Dallas,TX
-BR-101,Atlanta Branch,branch,Atlanta,GA
-BR-102,Charlotte Branch,branch,Charlotte,NC
-BR-103,Nashville Branch,branch,Nashville,TN
-BR-104,Birmingham Branch,branch,Birmingham,AL
+DC-01,Columbia Distribution Center,DC,Columbia,SC
+BR-101,Charleston Branch,branch,Charleston,SC
+BR-102,Greenville Branch,branch,Greenville,SC
+BR-103,Spartanburg Branch,branch,Spartanburg,SC
+BR-104,Myrtle Beach Branch,branch,Myrtle Beach,SC
+BR-105,Charlotte Branch,branch,Charlotte,NC
+BR-106,Raleigh Branch,branch,Raleigh,NC
+BR-107,Greensboro Branch,branch,Greensboro,NC
+BR-108,Asheville Branch,branch,Asheville,NC
+BR-109,Wilmington Branch,branch,Wilmington,NC
+BR-110,Augusta Branch,branch,Augusta,GA
+BR-111,Atlanta Branch,branch,Atlanta,GA
+BR-112,Savannah Branch,branch,Savannah,GA
+BR-113,Macon Branch,branch,Macon,GA
+BR-114,Columbia Branch,branch,Columbia,SC
