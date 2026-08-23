@@ -215,7 +215,7 @@ def render_landing() -> None:
         st.subheader("Use demo data")
         st.write(
             "Walk through the experience on a realistic mid-market HVAC "
-            "distributor profile: 2,500 SKUs, 5 locations, 180 days of "
+            "distributor profile: 4,000 SKUs, 15 locations, 180 days of "
             "variance history."
         )
         st.write("")
@@ -225,14 +225,14 @@ def render_landing() -> None:
 
         with st.expander("What's inside the demo dataset?"):
             st.markdown(
-                "- **2,500 SKUs** across Refrigerant, Copper Tubing, "
-                "Compressors, Motors, Controls, Miscellaneous\n"
-                "- **5 locations** — 1 DC + 4 branches across the Southeast US\n"
+                "- **4,000 SKUs** across Refrigerant, Copper, Compressors, "
+                "Motors, Controls, Pipe & Fittings, Valves, Water Heaters, Electrical\n"
+                "- **15 locations** — 1 DC + 14 branches across the Southeast US\n"
                 "- **180 days** of detected variance events\n"
-                "- **~1,800 events** with a realistic spread of detection sources, "
-                "loop times, and currently-open queue\n"
-                "- One branch generates ~2× the variance rate so the branch-level "
-                "story shows through"
+                "- **~6,750 events** with a realistic spread of detection sources, "
+                "loop times, and a currently-open queue\n"
+                "- Discrepancies weighted toward high-volume, low-cost parts so the "
+                "dollar figures stay realistic"
             )
 
 
